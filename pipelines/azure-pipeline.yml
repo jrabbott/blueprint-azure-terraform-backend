@@ -1,0 +1,31 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  serviceConnection: 'My-Azure-Service-Connection'
+  azureLocation: 'West Europe'
+  resourceGroupName: 'rg-terraform-mgmt'
+  storageAccountName: 'sttfstateuniqueprefix'
+  principalId: '$(TF_PIPELINE_SP_OBJECT_ID)'
+  resourceTags: '{"Environment":"Production","ManagedBy":"AzureDevOps","Dept":"CloudOps"}'
+
+steps:
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: 'Deploy Terraform Backend (ARM)'
+    inputs:
+      deploymentScope: 'Subscription'
+      azureResourceManagerConnection: '$(serviceConnection)'
+      subscriptionId: 'your-subscription-id-guid'
+      location: '$(azureLocation)'
+      templateLocation: 'Linked artifact'
+      csmFile: 'arm/main.json'
+      deploymentMode: 'Incremental'
+      overrideParameters: >
+        -resourceGroupName "$(resourceGroupName)"
+        -location "$(azureLocation)"
+        -storageAccountName "$(storageAccountName)"
+        -principalId "$(principalId)"
+        -tags '$(resourceTags)'

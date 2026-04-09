@@ -1,0 +1,19 @@
+name: Deploy Azure Bootstrap
+on: [push]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - uses: azure/arm-deploy@v2
+        with:
+          scope: subscription
+          region: westeurope
+          template: ./arm/main.json
+          parameters: >
+            storageAccountName=${{ vars.STORAGE_ACCOUNT_NAME }}
+            principalId=${{ secrets.SP_ID }}
+            tags='{"Project":"Infra","Env":"Prod"}'
