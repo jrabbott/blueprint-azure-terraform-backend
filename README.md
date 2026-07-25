@@ -12,8 +12,8 @@ Terraform has a "Chicken and Egg" problem: it needs a Storage Account to store i
 ## 🛡️ Governance & Security Best Practices
 - **Resilience:** Defaulted to **Standard_ZRS** for zone redundancy.
 - **Zero-Trust:** Shared Access Keys are **Disabled**. All access must use Entra ID (Azure AD) tokens.
-- **Network Isolation:** Public network access is completely **Disabled**. All backend connectivity is secured via a Private Endpoint.
-- **Auditability:** Every read/write/delete operation on the state file is logged to Log Analytics.
+- **Network Isolation:** Public network access is completely **Disabled**. All backend connectivity is secured via a Private Endpoint deployed to a dedicated subnet with an explicit `DenyAllInbound` Network Security Group rule.
+- **Auditability:** Log Analytics captures both control-plane metrics (transactions at the Storage Account level) and data-plane operations (reads, writes, and deletes at the Blob Service level).
 - **Recovery:** Blob Versioning and 14-day Soft Delete are enabled for both blobs and containers.
 
 ## 🔑 Why GUIDs for Role Definitions?

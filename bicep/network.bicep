@@ -12,7 +12,21 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   location: location
   tags: tags
   properties: {
-    securityRules: []
+    securityRules: [
+      {
+        name: 'DenyAllInbound'
+        properties: {
+          protocol: '*'
+          sourcePortRange: '*'
+          destinationPortRange: '*'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: '*'
+          access: 'Deny'
+          priority: 4096
+          direction: 'Inbound'
+        }
+      }
+    ]
   }
 }
 
@@ -26,17 +40,17 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' = {
         vnetAddressPrefix
       ]
     }
-    subnets: [
-      {
-        name: subnetName
-        properties: {
-          addressPrefix: subnetAddressPrefix
-          networkSecurityGroup: {
-            id: nsg.id
-          }
-        }
-      }
-    ]
+  }
+}
+
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {
+  parent: vnet
+  name: subnetName
+  properties: {
+    addressPrefix: subnetAddressPrefix
+    networkSecurityGroup: {
+      id: nsg.id
+    }
   }
 }
 
@@ -59,5 +73,5 @@ resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLin
   }
 }
 
-output subnetId string = '${vnet.id}/subnets/${subnetName}'
+output subnetId string = subnet.id
 output privateDnsZoneId string = privateDnsZone.id
