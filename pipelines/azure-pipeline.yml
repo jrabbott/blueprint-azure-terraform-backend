@@ -1,31 +1,45 @@
-trigger:
-  - main
+parameters:
+  - name: environment
+    displayName: 'Environment to deploy'
+    type: string
+    default: development
+    values:
+      - development
+      - test
+      - production
+
+trigger: none
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
   serviceConnection: 'My-Azure-Service-Connection'
-  azureLocation: 'West Europe'
-  resourceGroupName: 'rg-terraform-mgmt'
-  storageAccountName: 'sttfstateuniqueprefix'
-  principalId: '$(TF_PIPELINE_SP_OBJECT_ID)'
-  resourceTags: '{"Environment":"Production","ManagedBy":"AzureDevOps","Dept":"CloudOps"}'
+  azureLocation: 'uksouth'
 
 steps:
+  - task: AzureCLI@2
+    displayName: 'Get Service Connection SP Object ID'
+    name: GetSP
+    inputs:
+      azureSubscription: '$(serviceConnection)'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        CLIENT_ID=$(az account show --query user.name -o tsv)
+        SP_OBJECT_ID=$(az ad sp show --id "$CLIENT_ID" --query id -o tsv)
+        echo "##vso[task.setvariable variable=spObjectId;isOutput=true]$SP_OBJECT_ID"
+
   - task: AzureResourceManagerTemplateDeployment@3
-    displayName: 'Deploy Terraform Backend (ARM)'
+    displayName: 'Deploy Terraform Backend (Bicep)'
     inputs:
       deploymentScope: 'Subscription'
       azureResourceManagerConnection: '$(serviceConnection)'
       subscriptionId: 'your-subscription-id-guid'
       location: '$(azureLocation)'
       templateLocation: 'Linked artifact'
-      csmFile: 'arm/main.json'
+      csmFile: 'bicep/main.bicep'
+      csmParametersFile: 'bicep/environments/${{ parameters.environment }}.params.json'
       deploymentMode: 'Incremental'
       overrideParameters: >
-        -resourceGroupName "$(resourceGroupName)"
-        -location "$(azureLocation)"
-        -storageAccountName "$(storageAccountName)"
-        -principalId "$(principalId)"
-        -tags '$(resourceTags)'
+        -workflowPrincipalId "$(GetSP.spObjectId)"
